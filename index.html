@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Café Order Calculator</title>
+<style>
+  :root{
+    --paper:#f8f4ef;
+    --panel:#fffdf9;
+    --ink:#2d2926;
+    --muted:#77706a;
+    --line:#e6ddd4;
+    --accent:#b0876a;
+    --accent-dark:#8f684e;
+    --danger:#a84235;
+    --shadow:0 10px 30px rgba(70,52,40,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--paper);color:var(--ink)}
+  button,input{font:inherit}
+  button{cursor:pointer}
+  .app{max-width:1220px;margin:0 auto;padding:24px 16px 46px}
+  .top{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:18px}
+  .brand h1{margin:0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(28px,4vw,44px);font-weight:500;letter-spacing:.02em}
+  .brand p{margin:5px 0 0;color:var(--muted);font-size:14px}
+  .clear-all{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:9px 14px}
+  .layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(310px,.75fr);gap:18px;align-items:start}
+  .menu-panel,.order-panel{background:var(--panel);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}
+  .menu-panel{padding:16px}
+  .tools{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+  .search{width:100%;border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px 14px;outline:none}
+  .search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,135,106,.13)}
+  .tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;margin-bottom:4px;scrollbar-width:thin}
+  .tab{white-space:nowrap;border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:999px;padding:9px 12px}
+  .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .item-list{display:grid;gap:8px}
+  .menu-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;padding:13px 12px;border:1px solid transparent;border-bottom-color:var(--line);align-items:center}
+  .menu-item:last-child{border-bottom-color:transparent}
+  .menu-item:hover{background:#fbf7f2;border-color:var(--line);border-radius:15px}
+  .item-name{font-weight:700;font-size:15px}
+  .item-desc{font-size:12.5px;line-height:1.45;color:var(--muted);margin-top:4px}
+  .item-meta{display:flex;align-items:center;gap:10px;justify-content:flex-end}
+  .price{color:var(--accent-dark);font-weight:800;white-space:nowrap}
+  .add{width:36px;height:36px;border-radius:50%;border:0;background:var(--accent);color:#fff;font-size:22px;line-height:1}
+  .unavailable{opacity:.55}
+  .unavailable .add{background:#d8d1cb;cursor:not-allowed}
+  .order-panel{padding:16px;position:sticky;top:12px}
+  .order-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}
+  .order-head h2{font-family:Georgia,"Times New Roman",serif;margin:0;font-size:25px;font-weight:500}
+  .count-pill{font-size:12px;background:#eee8e2;border-radius:999px;padding:5px 9px;color:var(--muted)}
+  .empty{padding:28px 12px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:16px}
+  .cart{display:grid;gap:10px}
+  .cart-line{border:1px solid var(--line);border-radius:16px;padding:12px;background:#fff}
+  .cart-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}
+  .cart-title{font-weight:750;font-size:14px;line-height:1.35}
+  .line-price{font-weight:800;color:var(--accent-dark);white-space:nowrap}
+  .extras-text{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.35}
+  .cart-controls{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .qty{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:3px}
+  .qty button{width:30px;height:30px;border:0;background:#f2ece6;border-radius:50%;font-size:18px}
+  .qty span{min-width:22px;text-align:center;font-weight:700}
+  .line-actions{display:flex;gap:6px}
+  .small-btn{border:0;background:transparent;color:var(--accent-dark);padding:7px 8px;border-radius:8px;font-size:12px}
+  .small-btn.remove{color:var(--danger)}
+  .totals{border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
+  .sum-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+  .sum-row span{color:var(--muted);font-size:13px}
+  .sum-row strong{font-family:Georgia,"Times New Roman",serif;font-size:31px;font-weight:500}
+  .helper{font-size:11px;color:var(--muted);margin-top:5px}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(39,31,26,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:20}
+  .modal-backdrop.open{display:flex}
+  .modal{width:min(520px,100%);max-height:88vh;overflow:auto;background:var(--panel);border-radius:22px;border:1px solid var(--line);box-shadow:0 24px 70px rgba(0,0,0,.22);padding:18px}
+  .modal h3{font-family:Georgia,"Times New Roman",serif;font-size:25px;font-weight:500;margin:0 0 5px}
+  .modal-price{color:var(--accent-dark);font-weight:800;margin-bottom:16px}
+  .field-label{display:block;font-size:12px;color:var(--muted);margin:14px 0 7px;text-transform:uppercase;letter-spacing:.06em}
+  .modal-qty{display:flex;align-items:center;gap:10px}
+  .modal-qty button{width:42px;height:42px;border:1px solid var(--line);background:#fff;border-radius:12px;font-size:20px}
+  .modal-qty input{width:78px;height:42px;border:1px solid var(--line);border-radius:12px;text-align:center;font-weight:750}
+  .extra-list{display:grid;gap:7px}
+  .extra-option{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:13px;padding:10px;background:#fff}
+  .extra-option .extra-name{font-size:13px}
+  .extra-option .extra-price{font-weight:700;color:var(--accent-dark);font-size:13px;white-space:nowrap}
+  .extra-qty{display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:999px;padding:2px}
+  .extra-qty button{width:30px;height:30px;border:0;background:#f2ece6;border-radius:50%;font-size:17px;line-height:1}
+  .extra-qty input{width:36px;height:30px;border:0;background:transparent;text-align:center;font-weight:800;padding:0;appearance:textfield}
+  .extra-qty input::-webkit-outer-spin-button,.extra-qty input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}
+  .modal-actions button{border-radius:13px;padding:12px;border:1px solid var(--line);background:#fff;font-weight:700}
+  .modal-actions .primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .no-results{padding:30px 10px;text-align:center;color:var(--muted)}
+  @media(max-width:820px){
+    .layout{grid-template-columns:1fr}.order-panel{position:static;order:-1}.top{align-items:flex-start;flex-direction:column}.clear-all{align-self:flex-end;margin-top:-45px}
+  }
+  @media(max-width:480px){
+    .app{padding:14px 10px 32px}.menu-panel,.order-panel{border-radius:17px}.menu-item{grid-template-columns:1fr}.item-meta{justify-content:space-between}.modal-actions{grid-template-columns:1fr}.clear-all{margin-top:0;align-self:flex-start}
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand">
+      <h1>Café Order Calculator</h1>
+      <p>Select products, quantities and menu extras. Totals update automatically.</p>
+    </div>
+    <button class="clear-all" id="clearAll" type="button">Clear order</button>
+  </header>
+
+  <main class="layout">
+    <section class="menu-panel" aria-label="Menu">
+      <div class="tools">
+        <input class="search" id="search" type="search" placeholder="Search the menu…" autocomplete="off">
+      </div>
+      <div class="tabs" id="tabs" role="tablist" aria-label="Menu categories"></div>
+      <div class="item-list" id="itemList"></div>
+    </section>
+
+    <aside class="order-panel" aria-label="Current order">
+      <div class="order-head">
+        <h2>Current order</h2>
+        <span class="count-pill" id="orderCount">0 items</span>
+      </div>
+      <div id="cartArea"></div>
+      <div class="totals">
+        <div class="sum-row"><span>Total</span><strong id="grandTotal">€0,00</strong></div>
+        <div class="helper">Each extra can have its own quantity (for example Bacon ×2). Extras are multiplied by the item quantity.</div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h3 id="modalTitle"></h3>
+    <div class="modal-price" id="modalBasePrice"></div>
+
+    <label class="field-label" for="modalQty">Quantity</label>
+    <div class="modal-qty">
+      <button type="button" id="qtyMinus" aria-label="Decrease quantity">−</button>
+      <input id="modalQty" type="number" min="1" max="99" step="1" value="1" inputmode="numeric">
+      <button type="button" id="qtyPlus" aria-label="Increase quantity">+</button>
+    </div>
+
+    <div id="extrasWrap">
+      <div class="field-label">Extras</div>
+      <div class="extra-list" id="extraList"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" id="cancelModal">Cancel</button>
+      <button type="button" class="primary" id="confirmAdd">Add to order · €0,00</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const menu = [{"id": "warm-coffee", "label": "Coffee", "icon": "☕", "items": [{"name": "Espresso", "price": 2.8, "priceLabel": "2,80", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}, {"name": "Espresso lungo", "price": null, "priceLabel": "—", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}, {"name": "Espresso macchiato", "price": 3.0, "priceLabel": "3,00", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}, {"name": "Doppelter Espresso", "price": 4.8, "priceLabel": "4,80", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}, {"name": "Café", "price": 3.2, "priceLabel": "3,20", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}, {"name": "Cappuccino", "price": 4.0, "priceLabel": "4,00", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}, {"name": "Doppelter Cappuccino", "price": 5.8, "priceLabel": "5,80", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}, {"name": "Café au Lait", "price": 4.8, "priceLabel": "4,80", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}, {"name": "Latte macchiato", "price": 4.8, "priceLabel": "4,80", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}, {"name": "Latte macchiato doppelter Espresso", "price": 6.4, "priceLabel": "6,40", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}, {"name": "Schoko-Café", "price": 6.5, "priceLabel": "6,50", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}, {"name": "Heiße Schokolade", "price": 5.2, "priceLabel": "5,20", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}, {"name": "Chai Latte", "price": 5.2, "priceLabel": "5,20", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}, {"name": "Warme Milch mit Honig", "price": 4.2, "priceLabel": "4,20", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}, {"name": "Matcha", "price": 5.9, "priceLabel": "5,90", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}, {"name": "Heiße Zitrone", "price": 4.5, "priceLabel": "4,50", "description": "", "extras": [{"name": "Alternative Milch", "price": 0.8}, {"name": "Decaf", "price": 1.0}, {"name": "Sahne", "price": 1.5}, {"name": "Amaretto", "price": 2.5}]}]}, {"id": "warm-tea", "label": "Tea", "icon": "🍵", "items": [{"name": "Pamir-Bio Schwarztee", "price": 4.2, "priceLabel": "4,20", "description": "Darjeeling Puttabong Frühjahrspflücking der höchsten Qualitätsstufe aus den Teegärten Indiens", "extras": []}, {"name": "Makalu Bio Weisser Tee", "price": 4.2, "priceLabel": "4,20", "description": "China White Monkey, kostbarer Weißer Tee aus der Provinz Fujian", "extras": []}, {"name": "Fujiyama Bio Grüntee", "price": 4.2, "priceLabel": "4,20", "description": "Japan Kukicha, 100% japanischer Grüner Tee aus den Blätterstielen der Senchaproduktion gewonnen", "extras": []}, {"name": "Meltini Bio Kräutertee", "price": 4.2, "priceLabel": "4,20", "description": "Olivenblätter & Co: Geschnittene und ganze Olivenblätter, Apfelstücke, Lemongras, natürliche Aromen", "extras": []}, {"name": "Matterhorn Bio Kräutertee", "price": 4.2, "priceLabel": "4,20", "description": "Alpenkräuter, Pfefferminze, Süßholzwurzel, Holunderblüten, Kakaoschalen, Kamillenblüten, Melissenblätter", "extras": []}, {"name": "Kaskasi Bio-Früchtetee", "price": 4.2, "priceLabel": "4,20", "description": "Gojibeer & Co: Apfelstücke, Hibiskusblüten, Kakaoschalen, Gojibeerem, Granatapfel, Cranberrys, Hagebuttenschalen, Orangenschalen, natürliche Aromen", "extras": []}, {"name": "Earl Grey", "price": 4.2, "priceLabel": "4,20", "description": "Schwarzer Tee, süßlicher, milchiger Geschmack", "extras": []}, {"name": "Milky Oolong", "price": 4.2, "priceLabel": "4,20", "description": "Grüner Tee mit süßlichem, milchigem Geschmack", "extras": []}, {"name": "Jasmin", "price": 4.2, "priceLabel": "4,20", "description": "Grüner Tee mit Jasminblüte", "extras": []}, {"name": "Ginger Lemon", "price": 4.2, "priceLabel": "4,20", "description": "Kräutertee mit Ingwer, Zitrone und Süßholzwurzel", "extras": []}, {"name": "Evening Blend", "price": 4.2, "priceLabel": "4,20", "description": "Kräutertee mit Brombeere, Himbeere und Lavendel", "extras": []}, {"name": "Fruit Blend Wildberry", "price": 4.2, "priceLabel": "4,20", "description": "Früchtetee mit Beerenmischung", "extras": []}, {"name": "Earl Grey (Schwarzer Tee) mit Minze, Zitrone, Zimtstange, Anis, Nelke", "price": 5.2, "priceLabel": "5,20", "description": "", "extras": []}, {"name": "Earl Grey (Schwarzer Tee) mit Ingwer und Orange oder Zitrone, Anis", "price": 4.9, "priceLabel": "4,90", "description": "", "extras": []}, {"name": "Frische Minze, Apfelstücke und Apfelsaft", "price": 4.8, "priceLabel": "4,80", "description": "", "extras": []}, {"name": "Frische Minze", "price": 4.2, "priceLabel": "4,20", "description": "", "extras": []}, {"name": "Frischer Ingwer", "price": 4.2, "priceLabel": "4,20", "description": "", "extras": []}]}, {"id": "cold", "label": "Cold Drinks", "icon": "🥤", "items": [{"name": "Vöslauer Wasser 0,25L", "price": 3.8, "priceLabel": "3,80", "description": "", "extras": []}, {"name": "Vöslauer Wasser 0,75L", "price": 7.9, "priceLabel": "—", "description": "Stilles 7,90 · Medium 7,90", "extras": []}, {"name": "Stilles / Medium 3,80", "price": 3.8, "priceLabel": "—", "description": "", "extras": []}, {"name": "Bio-Limonade Proviant 0,33L", "price": 3.5, "priceLabel": "3,50", "description": "Zitrone-Ingwer · Apfelschorle · Rhabarberschorle", "extras": [{"name": "Bio-Pure Vegan Protein-Vanillegeschmack (1 Messlöffel 15ml)", "price": 2.8}, {"name": "Primal Collagen-Geschmacksneutral (1 Messlöffel 7,5ml)", "price": 2.8}]}, {"name": "Hausgemachte Smoothies", "price": 7.9, "priceLabel": "0,3L 7,90", "description": "Mandelmilch oder Orangensaft — täglich wechselnd, saisonabhängig", "extras": [{"name": "Bio-Pure Vegan Protein-Vanillegeschmack (1 Messlöffel 15ml)", "price": 2.8}, {"name": "Primal Collagen-Geschmacksneutral (1 Messlöffel 7,5ml)", "price": 2.8}]}, {"name": "Hausgemachte Limonade", "price": 5.8, "priceLabel": "0,3L 5,80", "description": "Petersilie und Apfelsaft naturtrüb", "extras": [{"name": "Bio-Pure Vegan Protein-Vanillegeschmack (1 Messlöffel 15ml)", "price": 2.8}, {"name": "Primal Collagen-Geschmacksneutral (1 Messlöffel 7,5ml)", "price": 2.8}]}, {"name": "Frisch gepresster Orangensaft", "price": 7.9, "priceLabel": "0,3L 7,90", "description": "", "extras": []}]}, {"id": "breakfast", "label": "Breakfast", "icon": "🥐", "items": [{"name": "Französisches Butter-Croissant", "price": 3.9, "priceLabel": "3,90", "description": "", "extras": [{"name": "Brotkorb extra", "price": 4.0}, {"name": "Bio-Joghurt mit Müsli, Honig und frischen saisonalen Früchten", "price": 4.0}, {"name": "Bio-Pure Vegan Protein-Vanillegeschmack (1 Messlöffel 15ml)", "price": 2.8}, {"name": "Primal Collagen-Geschmacksneutral (1 Messlöffel 7,5ml)", "price": 2.8}, {"name": "Joghurt mit Früchten ca.", "price": 6.9}, {"name": "Nüsse 2,00 · +Honig", "price": 1.5}]}, {"name": "Leichtes Frühstück", "price": 4.9, "priceLabel": "ca. 4,90", "description": "Knäckebrot, hausgemachter Frischkäse, bunte Rohkost Variation.", "extras": [{"name": "Käse (überbacken)", "price": 2.0}, {"name": "Käse und Schinken (überbacken)", "price": 3.2}, {"name": "Brotkorb extra", "price": 4.0}, {"name": "Bio-Joghurt mit Müsli, Honig und frischen saisonalen Früchten", "price": 4.0}, {"name": "Bio-Pure Vegan Protein-Vanillegeschmack (1 Messlöffel 15ml)", "price": 2.8}, {"name": "Primal Collagen-Geschmacksneutral (1 Messlöffel 7,5ml)", "price": 2.8}, {"name": "Joghurt mit Früchten ca.", "price": 6.9}, {"name": "Nüsse 2,00 · +Honig", "price": 1.5}]}, {"name": "Französisches Butter-Croissant (groß)", "price": 6.9, "priceLabel": "ca. 6,90", "description": "Butter und Marmelade.", "extras": [{"name": "Käse", "price": 2.4}, {"name": "Käse und Schinken (überbacken)", "price": 2.0}, {"name": "Brotkorb extra", "price": 4.0}, {"name": "Bio-Joghurt mit Müsli, Honig und frischen saisonalen Früchten", "price": 4.0}, {"name": "Bio-Pure Vegan Protein-Vanillegeschmack (1 Messlöffel 15ml)", "price": 2.8}, {"name": "Primal Collagen-Geschmacksneutral (1 Messlöffel 7,5ml)", "price": 2.8}, {"name": "Joghurt mit Früchten ca.", "price": 6.9}, {"name": "Nüsse 2,00 · +Honig", "price": 1.5}]}, {"name": "Traditionelles deutsches Frühstück", "price": 12.9, "priceLabel": "12,90", "description": "Brotkorb, 1 Scheibe gerösteter Landbrot, 1 Scheibe Sesamschnitte, Blattsalat, bunte Rohkost Variation, Butter und Marmalade, 1 gekochtes Ei", "extras": [{"name": "Brotkorb extra", "price": 4.0}, {"name": "Bio-Joghurt mit Müsli, Honig und frischen saisonalen Früchten", "price": 4.0}, {"name": "Bio-Pure Vegan Protein-Vanillegeschmack (1 Messlöffel 15ml)", "price": 2.8}, {"name": "Primal Collagen-Geschmacksneutral (1 Messlöffel 7,5ml)", "price": 2.8}, {"name": "Joghurt mit Früchten ca.", "price": 6.9}, {"name": "Nüsse 2,00 · +Honig", "price": 1.5}]}, {"name": "Momania Frühstück", "price": 14.9, "priceLabel": "14,90", "description": "Großer Brotkorb, 2 Scheiben geröstete Pumerhrust, 2 Scheiben geröstete Schwarzbrot, 1 gekochtes Ei, hausgemachter Frischkäse, Blattsalat, bunte Rohkost Variation, 2 Scheiben Serramoschinken, Butter und Marmelade", "extras": [{"name": "Brotkorb extra", "price": 4.0}, {"name": "Bio-Joghurt mit Müsli, Honig und frischen saisonalen Früchten", "price": 4.0}, {"name": "Bio-Pure Vegan Protein-Vanillegeschmack (1 Messlöffel 15ml)", "price": 2.8}, {"name": "Primal Collagen-Geschmacksneutral (1 Messlöffel 7,5ml)", "price": 2.8}, {"name": "Joghurt mit Früchten ca.", "price": 6.9}, {"name": "Nüsse 2,00 · +Honig", "price": 1.5}]}, {"name": "Großes Brötkorb Fitness Frühstück", "price": 22.9, "priceLabel": "ca. 22,90", "description": "Großer Brotkorb, 2 Scheiben Käse, 2 Scheiben geräucherten Lachs, Brie-Käse, Ziegenkäse, Blattsalat, bunte Rohkost Variation, 2 Scheiben Serramoschinken, Gläschen Joghurt mit Müsli, Honig und frischen saisonalen Früchten", "extras": [{"name": "Brotkorb extra", "price": 4.0}, {"name": "Bio-Joghurt mit Müsli, Honig und frischen saisonalen Früchten", "price": 4.0}, {"name": "Bio-Pure Vegan Protein-Vanillegeschmack (1 Messlöffel 15ml)", "price": 2.8}, {"name": "Primal Collagen-Geschmacksneutral (1 Messlöffel 7,5ml)", "price": 2.8}, {"name": "Joghurt mit Früchten ca.", "price": 6.9}, {"name": "Nüsse 2,00 · +Honig", "price": 1.5}]}]}, {"id": "brunch", "label": "Brunch / Lunch", "icon": "🍳", "items": [{"name": "Caprese", "price": 14.9, "priceLabel": "14,90", "description": "mit hausgemachtem Pesto, Mix Salat, Mozzarella, Tomate, Balsamico und Basilikum", "extras": []}, {"name": "Carpaccio mal anders", "price": 14.9, "priceLabel": "14,90", "description": "mit hausgemachtem Pesto, Mix Salat, Rote Bete, · mit hausgemachtem Pesto, Mix Salat, Rote Bete, +pochierten Ei und Sauce Hollandaise (A,D,B,C,I)", "extras": [{"name": "Bacon", "price": 3.0}]}, {"name": "Bunte Avocado", "price": 14.9, "priceLabel": "14,90", "description": "belegt mit Pesto, Mix Salat, Ziegenkäse, Avocado und furchtigem Topping", "extras": [{"name": "poch. Ei und Sauce Hollandaise (A,D,B,C,I)", "price": 3.0}, {"name": "Lachs", "price": 3.5}, {"name": "Bacon", "price": 3.0}]}, {"name": "Momania", "price": 14.9, "priceLabel": "14,90", "description": "belegt mit hausgemachter frischem Frischkäse, Avocado, Tomaten und Sprossen", "extras": [{"name": "poch. Ei und Sauce Hollandaise (A,D,B,C,I)", "price": 3.0}, {"name": "Lachs", "price": 3.5}, {"name": "Bacon", "price": 3.0}]}, {"name": "Mediterana", "price": 14.9, "priceLabel": "14,90", "description": "belegt mit Olivenöl, Mix Salat, Serramoschinken, Oliven, frische und getrocknete Tomaten, Parmesan, Rucola Salat, Balsamo (F,A,C)", "extras": [{"name": "poch. Ei und Sauce Hollandaise (A,D,B,C,I)", "price": 3.0}, {"name": "Lachs", "price": 3.0}, {"name": "Bacon", "price": 3.0}]}, {"name": "Momania Sandwich", "price": 13.9, "priceLabel": "13,90", "description": "Dunkles Belgisches Sauerteigbrot belegt mit hausgemachtem Frischkäse, Salat, Käse, geräucherter Putenbrust, pochiertes Ei, bunte Rohkost Variation und Senf-Dill Sauce", "extras": []}, {"name": "French Bagel", "price": 14.9, "priceLabel": "14,90", "description": "gerösteter Bagel belegt mit Mixsalat, Brie, Cornichons, Gurken, Senf-Dill Sauce", "extras": [{"name": "poch. Ei und Sauce Hollandaise (A,D,B,C,I)", "price": 3.0}, {"name": "Avocado", "price": 3.5}]}, {"name": "Lachs Bagel", "price": 14.9, "priceLabel": "14,90", "description": "gerösteter Bagel belegt mit Mixsalat, geräuchertem Lachs, Tomaten und Senf-Dill Sauce", "extras": [{"name": "poch. Ei und Sauce Hollandaise (A,D,B,C,I)", "price": 3.0}, {"name": "Avocado", "price": 3.5}]}, {"name": "American Bagel", "price": 14.9, "priceLabel": "14,90", "description": "gerösteter Bagel belegt mit Bacon, Cheddar-Käse, frischen Tomaten und Senf-Dill Sauce", "extras": [{"name": "poch. Ei und Sauce Hollandaise (A,D,B,C,I)", "price": 3.0}, {"name": "Avocado", "price": 3.5}]}, {"name": "Croque Polonais", "price": 11.9, "priceLabel": "11,90", "description": "getoastetes Landbrot belegt mit Käse, hausgemachten Pesto und kleinen Salami, Blattsalat", "extras": [{"name": "gekochtem Schinken", "price": 2.0}]}, {"name": "New York-Style Pancakes (3 Stück)", "price": 7.3, "priceLabel": "7,30", "description": "", "extras": [{"name": "frische saisonale Früchte", "price": 1.9}, {"name": "Ahornsirup", "price": 1.9}, {"name": "belgischer Schokosauce", "price": 4.5}, {"name": "belgischer Schokosauce, Passions- und Banane", "price": 4.5}, {"name": "Sahne", "price": 1.5}]}, {"name": "French Toast, Brioche (2 Scheiben)", "price": 8.3, "priceLabel": "8,30", "description": "mit Puderzucker", "extras": [{"name": "frische saisonale Früchte", "price": 4.0}, {"name": "Ahornsirup", "price": 1.9}, {"name": "Sahne", "price": 1.5}]}, {"name": "American Pancakes (2 Stück)", "price": 14.9, "priceLabel": "14,90", "description": "mit Cheddar-Käse, Bacon, Tomaten, Avocado, pochiertem Ei und Senf-Dill Sauce", "extras": []}, {"name": "Russian-Style Pancakes (2 Stück)", "price": 14.9, "priceLabel": "14,90", "description": "mit Frischkäse-Creme, Lachs, Kaviar, Koriander-Lemonsauce und pochiertem Ei", "extras": [{"name": "Avocado", "price": 3.5}]}]}, {"id": "bowls", "label": "Super Bowls", "icon": "🥣", "items": [{"name": "Müsli-Hafer Bowl", "price": 13.9, "priceLabel": "13,90", "description": "Knuspriges Bio-Müsli und Haferflocken in warmen Mandelmilch. Topping: verschiedene saisonale Früchte und Ahornsirup", "extras": [{"name": "Bio-Pure Vegan Protein-Vanillegeschmack (1 Messlöffel 15ml)", "price": 2.8}, {"name": "Primal Collagen-Geschmacksneutral (1 Messlöffel 7,5ml)", "price": 2.8}]}, {"name": "Banäpfel Bowl", "price": 13.9, "priceLabel": "13,90", "description": "Äpfel, Bananen, Mandelmilch, frische Äpfel und Bananen, Belgische Schokolade, Zimt. Topping: verschiedene saisonale Früchte", "extras": [{"name": "Bio-Pure Vegan Protein-Vanillegeschmack (1 Messlöffel 15ml)", "price": 2.8}, {"name": "Primal Collagen-Geschmacksneutral (1 Messlöffel 7,5ml)", "price": 2.8}]}, {"name": "Beeren - Acai Bowl", "price": 13.9, "priceLabel": "13,90", "description": "Knuspriges Bio-Müsli und Haferflocken, gefrorene rote Früchte. Topping: verschiedene saisonale Früchte, Schokopalitter", "extras": [{"name": "Bio-Pure Vegan Protein-Vanillegeschmack (1 Messlöffel 15ml)", "price": 2.8}, {"name": "Primal Collagen-Geschmacksneutral (1 Messlöffel 7,5ml)", "price": 2.8}]}, {"name": "Green Bowl", "price": 14.9, "priceLabel": "14,90", "description": "frische Avocado und Bananen, Knuspriges Bio-Müsli und Mandelmilch. Topping: verschiedene saisonale Früchte, Chia-Samen, Granola, Haferflocken, Belgische Schokoladen-Sauce, Bio-Müsli und Mandeldrink, Schokopalitter", "extras": [{"name": "Bio-Pure Vegan Protein-Vanillegeschmack (1 Messlöffel 15ml)", "price": 2.8}, {"name": "Primal Collagen-Geschmacksneutral (1 Messlöffel 7,5ml)", "price": 2.8}]}]}, {"id": "salads", "label": "Salads", "icon": "🥗", "items": [{"name": "Momania Salat", "price": 15.9, "priceLabel": "15,90", "description": "gemischter Salat mit Guacamole, Quinoa, Tomaten, Gurken, Paprika, Sprossen, schwarzen & weißen Sesam, Granatapfelsriup und Olivenöl", "extras": [{"name": "Lachs", "price": 3.5}, {"name": "pochierten Ei", "price": 3.0}]}, {"name": "Grün-Roter Genuss", "price": 16.9, "priceLabel": "16,90", "description": "gemischter Salat mit Quinoa, Rote Bete, Ziegenkäse, Walnüsse mit hausgemachtem Pesto Dressing, getrockneten und frischen Tomaten, Mango-Senf-Dressing", "extras": [{"name": "pochierten Ei", "price": 3.0}]}, {"name": "Caprese mal anders", "price": 15.9, "priceLabel": "15,90", "description": "Rucola Salat mit Mozzarella, hausgemachten Pesto, getrockneten und frischen Tomaten, Parmesan, Oliven, Basilikum und hausgemachten Dressing (Balsamico, Honig und Olivenöl)", "extras": [{"name": "pochierten Ei", "price": 3.0}]}]}, {"id": "wine", "label": "Wine & Spirits", "icon": "🍷", "items": [{"name": "Grauburgunder, Johanneshof, D-Rheinhessen 12,5%", "price": 8.9, "priceLabel": "0,15L 8,90", "description": "Trocken, milde Säure, leicht und sehr bekömmlich, prämiert, Landespreis Rheinhessen", "extras": []}, {"name": "Sauvignon Blanc, Jo Johannes, D-Pfalz 12%", "price": 8.9, "priceLabel": "0,15L 8,90", "description": "Trocken, frischer Weißwein, blumige Note", "extras": []}, {"name": "(W)Syrah/(Cabernet Sauvignon) Fam Quiot, Fr-Provence 13%", "price": 8.9, "priceLabel": "0,15L 8,90", "description": "Cremiges Aroma, Erdbeeren, passé ideal zu leichten Gerichten und Aperitifs", "extras": []}, {"name": "Primitivo, Tenuto Rubino, von Italiens Halbinsel Salento 13,5%", "price": 8.9, "priceLabel": "0,15L 8,90", "description": "Trockenem, charaktervoller Rotwein mit einem herrlichen Bouquet und satter Farbe", "extras": []}, {"name": "Rabosello, Più, Vino Rosso Frizzante, IT-Veneto 10,5%", "price": 8.5, "priceLabel": "0,1L 8,50", "description": "Leichter und temperierter Prosecco rosé", "extras": []}, {"name": "Terra Serena, Frizzante, IT-Veneto 10%", "price": 8.5, "priceLabel": "0,1L 8,50", "description": "Sehr leicht bekömmlicher Prosecco", "extras": []}, {"name": "Poli, Cleopatra, Moscato Oro, IT-Regione del Veneto", "price": 9.5, "priceLabel": "0,2cl 9,50", "description": "Grappa – elegant, blühende Wiese, frisches Obst und Zitrusfrüchte, Honig, Sülzgebacken, Alkoholanteil 40%", "extras": []}, {"name": "Berta, Amaretto di Mombaruzzo, IT-Piemont", "price": 9.5, "priceLabel": "0,2cl 9,50", "description": "Amaretto – gereift in Kirschholzfässern, Mandeliten, Alkoholanteil 28%", "extras": []}, {"name": "Berta, Amaro di Erbe, IT-Piemont", "price": 9.5, "priceLabel": "0,2cl 9,50", "description": "Kräuterlikör – Kräuterlikör auf Grappabasis, kraftvoll und komplex, milde Süße im Hintergrund, Alkoholanteil 30%", "extras": []}]}];
+const state = { category: menu[0]?.id || '', search: '', cart: [], editing: null, selectedItem: null };
+const euro = new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
+const $ = (id) => document.getElementById(id);
+const els = { tabs:$('tabs'), list:$('itemList'), search:$('search'), cart:$('cartArea'), count:$('orderCount'), total:$('grandTotal'), clear:$('clearAll'), backdrop:$('modalBackdrop'), title:$('modalTitle'), base:$('modalBasePrice'), qty:$('modalQty'), extras:$('extraList'), extrasWrap:$('extrasWrap'), confirm:$('confirmAdd'), cancel:$('cancelModal'), minus:$('qtyMinus'), plus:$('qtyPlus') };
+
+function fmt(n){ return euro.format(Number.isFinite(n) ? n : 0); }
+function clampQty(v){ const n=Math.trunc(Number(v)); return Number.isFinite(n)?Math.min(99,Math.max(1,n)):1; }
+function currentSection(){ return menu.find(s=>s.id===state.category) || menu[0]; }
+function itemUnitTotal(item, extras){ return (item.price || 0) + extras.reduce((s,e)=>s+(e.price*e.qty),0); }
+function itemKey(item, extras){ return item.name+'||'+extras.map(e=>e.name+'@'+e.price+'x'+e.qty).sort().join('|'); }
+function clampExtraQty(v){ const n=Math.trunc(Number(v)); return Number.isFinite(n)?Math.min(20,Math.max(0,n)):0; }
+
+function renderTabs(){
+  els.tabs.innerHTML='';
+  menu.forEach(sec=>{
+    const b=document.createElement('button');
+    b.type='button'; b.className='tab'+(sec.id===state.category?' active':'');
+    b.textContent=`${sec.icon} ${sec.label}`;
+    b.setAttribute('role','tab'); b.setAttribute('aria-selected',sec.id===state.category?'true':'false');
+    b.addEventListener('click',()=>{state.category=sec.id; renderTabs(); renderMenu();});
+    els.tabs.appendChild(b);
+  });
+}
+
+function renderMenu(){
+  const q=state.search.trim().toLocaleLowerCase('de');
+  const sec=currentSection();
+  const items=sec.items.filter(it=>!q || (it.name+' '+it.description).toLocaleLowerCase('de').includes(q));
+  els.list.innerHTML='';
+  if(!items.length){ els.list.innerHTML='<div class="no-results">No matching menu items.</div>'; return; }
+  items.forEach(item=>{
+    const row=document.createElement('div'); row.className='menu-item'+(item.price==null?' unavailable':'');
+    const left=document.createElement('div');
+    const name=document.createElement('div'); name.className='item-name'; name.textContent=item.name; left.appendChild(name);
+    if(item.description){ const d=document.createElement('div'); d.className='item-desc'; d.textContent=item.description; left.appendChild(d); }
+    if(item.extras.length){ const ex=document.createElement('div'); ex.className='item-desc'; ex.textContent=`Extras available: ${item.extras.length}`; left.appendChild(ex); }
+    const meta=document.createElement('div'); meta.className='item-meta';
+    const price=document.createElement('span'); price.className='price'; price.textContent=item.price==null?'Price missing':fmt(item.price); meta.appendChild(price);
+    const add=document.createElement('button'); add.type='button'; add.className='add'; add.textContent='+'; add.disabled=item.price==null; add.setAttribute('aria-label',`Add ${item.name}`); add.addEventListener('click',()=>openModal(item)); meta.appendChild(add);
+    row.append(left,meta); els.list.appendChild(row);
+  });
+}
+
+function openModal(item, cartIndex=null){
+  state.selectedItem=item; state.editing=cartIndex;
+  const existing=cartIndex==null?null:state.cart[cartIndex];
+  els.title.textContent=item.name; els.base.textContent=`Base price: ${fmt(item.price)}`;
+  els.qty.value=existing?existing.qty:1; els.extras.innerHTML='';
+  if(item.extras.length){
+    els.extrasWrap.style.display='block';
+    item.extras.forEach((ex,i)=>{
+      const row=document.createElement('div'); row.className='extra-option';
+      const name=document.createElement('span'); name.className='extra-name'; name.textContent=ex.name;
+      const price=document.createElement('span'); price.className='extra-price'; price.textContent='+'+fmt(ex.price)+' each';
+      const qtyWrap=document.createElement('div'); qtyWrap.className='extra-qty';
+      const minus=document.createElement('button'); minus.type='button'; minus.textContent='−'; minus.setAttribute('aria-label',`Decrease ${ex.name}`);
+      const input=document.createElement('input'); input.type='number'; input.min='0'; input.max='20'; input.step='1'; input.inputMode='numeric'; input.dataset.index=i;
+      const previous=existing?existing.extras.find(e=>e.name===ex.name && e.price===ex.price):null;
+      input.value=previous?previous.qty:0;
+      const plus=document.createElement('button'); plus.type='button'; plus.textContent='+'; plus.setAttribute('aria-label',`Increase ${ex.name}`);
+      minus.addEventListener('click',()=>{input.value=clampExtraQty(Number(input.value)-1); updateModalTotal();});
+      plus.addEventListener('click',()=>{input.value=clampExtraQty(Number(input.value)+1); updateModalTotal();});
+      input.addEventListener('input',()=>{input.value=clampExtraQty(input.value); updateModalTotal();});
+      qtyWrap.append(minus,input,plus); row.append(name,price,qtyWrap); els.extras.appendChild(row);
+    });
+  } else { els.extrasWrap.style.display='none'; }
+  els.confirm.textContent=(existing?'Update order · ':'Add to order · ')+fmt(modalTotal());
+  els.backdrop.classList.add('open'); els.backdrop.setAttribute('aria-hidden','false'); setTimeout(()=>els.qty.focus(),0);
+}
+function closeModal(){ els.backdrop.classList.remove('open'); els.backdrop.setAttribute('aria-hidden','true'); state.selectedItem=null; state.editing=null; }
+function selectedExtras(){
+  if(!state.selectedItem) return [];
+  return [...els.extras.querySelectorAll('.extra-qty input')].map(input=>{
+    const ex=state.selectedItem.extras[Number(input.dataset.index)]; const qty=clampExtraQty(input.value);
+    return ex && qty>0 ? {...ex,qty} : null;
+  }).filter(Boolean);
+}
+function modalTotal(){ if(!state.selectedItem) return 0; return clampQty(els.qty.value)*itemUnitTotal(state.selectedItem,selectedExtras()); }
+function updateModalTotal(){ els.qty.value=clampQty(els.qty.value); els.confirm.textContent=(state.editing==null?'Add to order · ':'Update order · ')+fmt(modalTotal()); }
+
+function commitModal(){
+  const item=state.selectedItem; if(!item) return;
+  const qty=clampQty(els.qty.value); const extras=selectedExtras();
+  if(state.editing!=null){ state.cart[state.editing]={item,qty,extras}; }
+  else {
+    const key=itemKey(item,extras); const found=state.cart.findIndex(l=>itemKey(l.item,l.extras)===key);
+    if(found>=0) state.cart[found].qty=Math.min(99,state.cart[found].qty+qty); else state.cart.push({item,qty,extras});
+  }
+  closeModal(); renderCart();
+}
+
+function renderCart(){
+  els.cart.innerHTML='';
+  if(!state.cart.length){ els.cart.innerHTML='<div class="empty">Your order is empty.<br>Select an item from the menu.</div>'; }
+  else {
+    const wrap=document.createElement('div'); wrap.className='cart';
+    state.cart.forEach((line,idx)=>{
+      const card=document.createElement('div'); card.className='cart-line';
+      const top=document.createElement('div'); top.className='cart-top';
+      const t=document.createElement('div'); t.className='cart-title'; t.textContent=line.item.name;
+      const lp=document.createElement('div'); lp.className='line-price'; lp.textContent=fmt(line.qty*itemUnitTotal(line.item,line.extras)); top.append(t,lp); card.appendChild(top);
+      if(line.extras.length){ const et=document.createElement('div'); et.className='extras-text'; et.textContent=line.extras.map(e=>`${e.name} ×${e.qty} (+${fmt(e.price*e.qty)} per item)`).join(' · '); card.appendChild(et); }
+      const controls=document.createElement('div'); controls.className='cart-controls';
+      const qty=document.createElement('div'); qty.className='qty';
+      const minus=document.createElement('button'); minus.type='button'; minus.textContent='−'; minus.setAttribute('aria-label','Decrease quantity'); minus.addEventListener('click',()=>{line.qty--; if(line.qty<1) state.cart.splice(idx,1); renderCart();});
+      const val=document.createElement('span'); val.textContent=line.qty;
+      const plus=document.createElement('button'); plus.type='button'; plus.textContent='+'; plus.setAttribute('aria-label','Increase quantity'); plus.addEventListener('click',()=>{line.qty=Math.min(99,line.qty+1); renderCart();}); qty.append(minus,val,plus);
+      const acts=document.createElement('div'); acts.className='line-actions';
+      const edit=document.createElement('button'); edit.type='button'; edit.className='small-btn'; edit.textContent='Edit extras'; edit.addEventListener('click',()=>openModal(line.item,idx));
+      const remove=document.createElement('button'); remove.type='button'; remove.className='small-btn remove'; remove.textContent='Remove'; remove.addEventListener('click',()=>{state.cart.splice(idx,1); renderCart();}); acts.append(edit,remove);
+      controls.append(qty,acts); card.appendChild(controls); wrap.appendChild(card);
+    });
+    els.cart.appendChild(wrap);
+  }
+  const qtyTotal=state.cart.reduce((s,l)=>s+l.qty,0); const total=state.cart.reduce((s,l)=>s+l.qty*itemUnitTotal(l.item,l.extras),0);
+  els.count.textContent=`${qtyTotal} ${qtyTotal===1?'item':'items'}`; els.total.textContent=fmt(total);
+}
+
+els.search.addEventListener('input',e=>{state.search=e.target.value; renderMenu();});
+els.clear.addEventListener('click',()=>{ if(state.cart.length && !confirm('Clear the whole order?')) return; state.cart=[]; renderCart(); });
+els.cancel.addEventListener('click',closeModal); els.confirm.addEventListener('click',commitModal);
+els.minus.addEventListener('click',()=>{els.qty.value=clampQty(Number(els.qty.value)-1); updateModalTotal();});
+els.plus.addEventListener('click',()=>{els.qty.value=clampQty(Number(els.qty.value)+1); updateModalTotal();});
+els.qty.addEventListener('input',updateModalTotal);
+els.backdrop.addEventListener('click',e=>{if(e.target===els.backdrop) closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape' && els.backdrop.classList.contains('open')) closeModal();});
+renderTabs(); renderMenu(); renderCart();
+</script>
+</body>
+</html>
